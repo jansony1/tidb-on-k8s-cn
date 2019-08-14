@@ -55,27 +55,25 @@ if you don't know Chinese, below is a quick guide to install kubernetes by kops:
 1. Ssh to the bastion server. If you are using Amazon AMI,  ssh -i < name-of-your-private-key >.pem  ec2-user@< ip-address > . For other linux type, try centos or ubuntu for the username.
 
 1. Run the following command
-```
+    ```
+    helm search | grep tidb
 
-helm search | grep tidb
+    # fetch Tidb cluster package  
+    helm fetch pingcap/tidb-cluster   
 
-# fetch Tidb cluster package  
-helm fetch pingcap/tidb-cluster   
+    # unzip it to get the config file
+    tar -zxvf tidb-cluster-v1.0.0.tgz
 
-# unzip it to get the config file
-tar -zxvf tidb-cluster-v1.0.0.tgz
-
-cd tidb-cluster
-```
-
+    cd tidb-cluster
+    ```
 1. There is a values.yml file in this folder which contains the configuration set for components like TiKV, pd, TiDB etc. **Custom your own configuration by revising the yml file** before you install TiDB, examples of changes includes revise replica set, set a ELB, change pvReclaimPolicy or revise the storageClassName etc.    
 
 - Changing storageclass to gp2, AWS EBS volume General SSD. For more choices, click [EBS Volume type](https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/EBSVolumeTypes.html)   
 
-![](img/storage-class.png)
+    ![](img/storage-class.png)
 
 - changing component replica number   
-![](img/replica-number.png)
+    ![](img/replica-number.png)
 
 1. After everything is set, run the following command.
 
@@ -93,8 +91,9 @@ kubectl get pv | grep tidbtest
 
 
 ## Step3. Scale on kubernete cluster
+This section enables you to scalue the cluster up or down.
 
-1. If you would like to change any configuration, for example, scaling up or down your replica number, simple revise the values.yml again and run the following command. For more guide upon scaling, refer to [this page](https://github.com/pingcap/docs-cn/blob/master/v3.0/tidb-in-kubernetes/scale-in-kubernetes.md)
+1. If you would like to scale up or down your pod replica number, simple revise the values.yml again and run the following command. For more guide upon scaling, refer to [this page](https://github.com/pingcap/docs-cn/blob/master/v3.0/tidb-in-kubernetes/scale-in-kubernetes.md)
 
 ```
 helm upgrade tidb-cluster-test pingcap/tidb-cluster --namespace=tidbtest -f values.yml 
@@ -104,8 +103,10 @@ You will see this after the command.
 
 ![](img/helm-upgrade.png)
 
+1.
 
-## Step 3: How to access TiDB 
+
+## Step 4: How to access TiDB 
 
 
 ###	Cluster Startup
