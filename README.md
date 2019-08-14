@@ -13,15 +13,15 @@ if you know Chinese, just to [kops-cn](https://github.com/nwcdlabs/kops-cn) and 
 if you don't know Chinese, below is a quick guide to install kubernetes by kops:
 
 1. launch an EC2 (select Amazon Linux 2 AMI) as a kubernetes management machine, and configure it as
-* Login AWS China console and goto Services->IAM->Group, add a new group (e.g kubernetes) with “AdministratorAccess” attached (for test purpose)
+    1. Login AWS China console and goto Services->IAM->Group, add a new group (e.g kubernetes) with “AdministratorAccess” attached (for test purpose)
 
-* Goto Services->IAM->Users, add a new user (e.g. kops) with “Access type” of “Programmatic access” and add it into the new created group (e.g. kubernetes). After it, you will get the “Access key ID” and “Secret access key” and write them down for future use;
+    1. Goto Services->IAM->Users, add a new user (e.g. kops) with “Access type” of “Programmatic access” and add it into the new created group (e.g. kubernetes). After it, you will get the “Access key ID” and “Secret access key” and write them down for future use;
 
-* Login the EC2, and perform the “aws configure”. It will ask you to input the following information. cn-north-1 is the code number for Beijing region, for Ningxia, it's cn-northwest-1
-    - AWS Access key ID: <created above>
-    - AWS Secret access key: <created above>
-    - Default Region name: cn-north-1  
-    - Default output format: none
+    1. Login the EC2, and perform the “aws configure”. It will ask you to input the following information. cn-north-1 is the code number for Beijing region, for Ningxia, it's cn-northwest-1
+        - AWS Access key ID: <created above>
+        - AWS Secret access key: <created above>
+        - Default Region name: cn-north-1  
+        - Default output format: none
 
 1. Install the kops and kubectl by following the instructions in https://github.com/nwcdlabs/kops-cn, or using the script of install-tools.sh in the package;
 
@@ -44,10 +44,10 @@ if you don't know Chinese, below is a quick guide to install kubernetes by kops:
 	- $ make update-cluster # will take 10-15 mins
 	- $ make validate-cluster # or you can start to use kubectl to operate on the kubernetes cluster
 	- In order to work around the ICP recordal for the public web service which is required by China government, you still need to perform the following steps:
-	    (1) Login AWS China console and go to Services->EC2->Load Balancer, and select the the load balancer according to the .kube/config and make some changes:
+	    - Login AWS China console and go to Services->EC2->Load Balancer, and select the the load balancer according to the .kube/config and make some changes:
 	        - add a rule into the security group to allow 8443 TCP traffic from 0.0.0.0/0 source;
 	        - Click on the “Listeners” tab and change the “Load Balancer Port” from 443 to 8444
-	    (2) Edit .kube/config by appending “:8443” at end of line “server: https://xxxx”
+	    - Edit .kube/config by appending “:8443” at end of line “server: https://xxxx”
 	- And now, the kubernetes cluster is ready, and you can operate it by kubectl
 
 ## Step 2: install TiDB on kubernete cluster
