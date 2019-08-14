@@ -26,24 +26,24 @@ if you don't know Chinese, below is a quick guide to install kubernetes by kops:
 1. Install the kops and kubectl by following the instructions in https://github.com/nwcdlabs/kops-cn, or using the script of install-tools.sh in the package;
 
 1. By following the instructs in above kops-cn website, download kops-cn.zip and unzip it, and then make some changes to the kops-cn-master/Makefile as below:
-* modify the S3 bucket name (Note: S3 bucket is to store the kubernetes cluster state)
-    - Create a S3 bucket through AWS China console in the Beijing region, for example, the S3 bucket name is "example-of-kops-state";
-    - replace the value of “KOPS_STATE_STORE” with your S3 bucket name of "example-of-kops-state”;
-* modify SSH key pair
-    - Generate a SSH key-pair including .pem and .pub, for example ec2kp_nx.pem and ec2kp_nx.pub (you can generate key pair by following https://github.com/nwcdlabs/kops-cn/issues/68#issuecomment-483879369);
-    - Replace the value of “SSH_PUBLIC_KEY” with the full path of new generated public key of “ec2kp_nx.pub”;
-* Modify the VPCID
-    - Create a new VPC (e.g. 10.32.0.0/16) in Beijing region through AWS China console. For example, the new VPC id is vpc-bb3e99d2;
-    - Create a new internet gateway through AWS China console, and attach it to the new created VPC;
-    - Replace the value of ‘VPCID’ with the new create VPC (e.g. vpc-bb3e99d2)
+    * modify the S3 bucket name (Note: S3 bucket is to store the kubernetes cluster state)
+        - Create a S3 bucket through AWS China console in the Beijing region, for example, the S3 bucket name is "example-of-kops-state";
+        - replace the value of “KOPS_STATE_STORE” with your S3 bucket name of "example-of-kops-state”;
+    * modify SSH key pair
+        - Generate a SSH key-pair including .pem and .pub, for example ec2kp_nx.pem and ec2kp_nx.pub (you can generate key pair by following https://github.com/nwcdlabs/kops-cn/issues/68#issuecomment-483879369);
+        - Replace the value of “SSH_PUBLIC_KEY” with the full path of new generated public key of “ec2kp_nx.pub”;
+    * Modify the VPCID
+        - Create a new VPC (e.g. 10.32.0.0/16) in Beijing region through AWS China console. For example, the new VPC id is vpc-bb3e99d2;
+        - Create a new internet gateway through AWS China console, and attach it to the new created VPC;
+        - Replace the value of ‘VPCID’ with the new create VPC (e.g. vpc-bb3e99d2)
 
-* Install the kubernetes cluster by following the instructions of kops-cn
-	- $ cd kops-cn-master
-	- $ make create-cluster
-	- $ make edit-cluster # follow the instructions in kops-cn website to copy the content from spec.yml
-	- $ make update-cluster # will take 10-15 mins
-	- $ make validate-cluster # or you can start to use kubectl to operate on the kubernetes cluster
-	- In order to work around the ICP recordal for the public web service which is required by China government, you still need to perform the following steps:
+    * Install the kubernetes cluster by following the instructions of kops-cn
+        - $ cd kops-cn-master
+        - $ make create-cluster
+        - $ make edit-cluster # follow the instructions in kops-cn website to copy the content from spec.yml
+        - $ make update-cluster # will take 10-15 mins
+        - $ make validate-cluster # or you can start to use kubectl to operate on the kubernetes cluster
+        - In order to work around the ICP recordal for the public web service which is required by China government, you still need to perform the following steps:
 	    - Login AWS China console and go to Services->EC2->Load Balancer, and select the the load balancer according to the .kube/config and make some changes:
 	        - add a rule into the security group to allow 8443 TCP traffic from 0.0.0.0/0 source;
 	        - Click on the “Listeners” tab and change the “Load Balancer Port” from 443 to 8444
