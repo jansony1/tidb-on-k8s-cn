@@ -72,26 +72,26 @@ If you don't know Chinese, below is a quick guide to install kubernetes by kops:
     ```
 1. There is a values.yml file in this folder which contains the configuration set for components like TiKV, pd, TiDB etc. **Custom your own configuration by revising the yml file** before you install TiDB, examples of changes includes revise replica set, set a ELB, change pvReclaimPolicy or revise the storageClassName etc.    
 
-- Changing storageclass to gp2, AWS EBS volume General SSD. For more choices, click [EBS Volume type](https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/EBSVolumeTypes.html)   
+    - Changing storageclass to gp2, AWS EBS volume General SSD. For more choices, click [EBS Volume type](https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/EBSVolumeTypes.html)   
 
-    ![](img/storage-class.png)
+        ![](img/storage-class.png)
 
-- changing component replica number   
-    ![](img/replica-number.png)
+    - changing component replica number   
+        ![](img/replica-number.png)
 
-- change nodeport to AWS Load balancer
-    ![](img/load-balancer.png)
+    - change nodeport to AWS Load balancer
+        ![](img/load-balancer.png)
 1. After everything is set, run the following command.
 
-```
-helm install pingcap/tidb-cluster --name=tidb-cluster-test --namespace=tidbtest -f values.yml 
-```
+    ```
+    helm install pingcap/tidb-cluster --name=tidb-cluster-test --namespace=tidbtest -f values.yml 
+    ```
 
 1. Check the cluster configuration. For example, you will see the storageClass applies succesfully to gp2 and PV has automatically been provisioned dynamically. Click here for more introduction upon [PV provision](https://kubernetes.io/docs/concepts/storage/persistent-volumes/).
 Also, if you go to [AWS Console](https://console.amazonaws.cn/ec2/autoscaling/home) now , you will find EBS GP2 volumes provisioned automatically.
-```
-kubectl get pv | grep tidbtest
-```
+    ```
+    kubectl get pv | grep tidbtest
+    ```
 
    ![](img/get-pv.png)
 
@@ -101,11 +101,11 @@ This section enables you to scalue the cluster up or down.
 
 1. If you would like to scale up or down your pod replica number, simple revise the values.yml and run the following command. For more guide upon scaling, refer to [this page](https://github.com/pingcap/docs-cn/blob/master/v3.0/tidb-in-kubernetes/scale-in-kubernetes.md)
 
-```
-helm upgrade tidb-cluster-test pingcap/tidb-cluster --namespace=tidbtest -f values.yml 
-``` 
+   ```
+   helm upgrade tidb-cluster-test pingcap/tidb-cluster --namespace=tidbtest -f values.yml 
+   ``` 
 
-You will see this after the command.
+   You will see this after the command.
 
    ![](img/helm-upgrade.png)
 
@@ -133,24 +133,26 @@ You will see this after the command.
     mysql -h 127.0.0.1 -P 4000 -u root -D test
     ```
 1. Set a password for your user
+
     ```
     SET PASSWORD FOR 'root'@'%' = 'JEeRq8WbHu'; FLUSH PRIVILEGES;
     ```    
 1. View monitor dashboard for TiDB cluster
+
    ```
    kubectl port-forward -n tidbtest svc/tidb-cluster-test-grafana 3000:3000
    ```   
 
-Open browser at http://localhost:3000. The default username and password is admin/admin.
+1. Open browser at http://localhost:3000. The default username and password is admin/admin.
 If you are running this from a remote machine, you must specify the server's external IP address.
 
 ## Delete resources
 
 If your pv is retained, after the scale down, you may need to delete the released pv manually by running the following command.
 
-    ```
-    kubectl delete pv pvc-2eb80d98-bd7XXXc1ae  -n tidbtest
-    ```
+  ```
+  kubectl delete pv pvc-2eb80d98-bd7XXXc1ae  -n tidbtest
+  ```
 
 ## Limitation
 
