@@ -58,10 +58,47 @@ If you don't know Chinese, below is a quick guide to install kubernetes by kops:
 
 1. Ssh to the bastion server. If you are using Amazon AMI,  ssh -i < name-of-your-private-key >.pem  ec2-user@< ip-address > . For other linux type, try centos or ubuntu for the username.
 
-1. Run the following command
-    ```
-    helm search | grep tidb
+1. Install Helm. Please refer to below [AWS official tutorial](https://docs.aws.amazon.com/eks/latest/userguide/helm.html) or [Helm document](https://helm.sh/docs/using_helm/#installing-helm) for Helm installation.
 
+1. Add Pingcap into the Helm repo list.
+    ```
+    helm repo add pingcap https://charts.pingcap.org/
+    helm repo update
+    helm search tidb
+    ```
+    
+1. Install Tidb Operator
+
+   ```
+   #to create TidbCluster customized resource type:
+   kubectl apply -f https://raw.githubusercontent.com/pingcap/tidb-operator/master/manifests/crd.yaml && \
+   kubectl get crd tidbclusters.pingcap.com
+   
+   #to get chart yaml file of tidb-operator:
+   mkdir -p /home/tidb/tidb-operator && \
+   helm inspect values pingcap/tidb-operator --version=<chart-version> > /home/tidb/tidb-operator/values-tidb-operator.yaml
+   
+   #to modify the yaml file and specify local image repo:
+   vim /home/tidb/tidb-operator/values-tidb-operator.yaml
+   
+   # set the value of 'scheduler.kubeSchedulerImage' to 'gcr.azk8s.cn/google-containers/kube-scheduler', and save the file.
+   ```
+   
+   ![](img/yaml-file.png)
+   
+   ```
+   #set the value of 'scheduler.kubeSchedulerImage' to 'gcr.azk8s.cn/google-containers/kube-scheduler', and save the file.
+   #install tidb-operator:
+   helm install pingcap/tidb-operator --name=tidb-operator --namespace=tidb-admin --version=v1.0.0  -f /home/tidb/tidb-operator/values-tidb-operator.yaml
+   
+   #verify the installation:
+   kubectl get po -n tidb-admin -l app.kubernetes.io/name=tidb-operator
+
+   ```
+   
+1. Run the following command
+
+    ```
     # fetch Tidb cluster package  
     helm fetch pingcap/tidb-cluster   
 
@@ -70,6 +107,7 @@ If you don't know Chinese, below is a quick guide to install kubernetes by kops:
 
     cd tidb-cluster
     ```
+    
 1. There is a values.yml file in this folder which contains the configuration set for components like TiKV, pd, TiDB etc. **Custom your own configuration by revising the yml file** before you install TiDB, examples of changes includes revise replica set, set a ELB, change pvReclaimPolicy or revise the storageClassName etc.    
 
     - Changing storageclass to gp2, AWS EBS volume General SSD. For more choices, click [EBS Volume type](https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/EBSVolumeTypes.html)   
@@ -81,6 +119,7 @@ If you don't know Chinese, below is a quick guide to install kubernetes by kops:
 
     - change nodeport to AWS Load balancer
         ![](img/load-balancer.png)
+        
 1. After everything is set, run the following command.
 
     ```
