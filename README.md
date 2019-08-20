@@ -4,61 +4,47 @@
 This document provides guides to deploy TiDB in k8s in AWS China using [kops-cn](https://github.com/nwcdlabs/kops-cn). 
 
 ##	Pre-requisites
-*	Have a AWS China account. If you don't have one, [click here to register](https://www.amazonaws.cn/en/sign-up/)
+1.  Have a AWS China account. If you don't have one, [click here to register](https://www.amazonaws.cn/en/sign-up/)
+1.  Launch an EC2 (recommend selecting Amazon Linux 2 AMI) as a kubernetes management machine, and configure it as below.
+    1. Login [AWS China console](https://console.amazonaws.cn/console/home)  
+   
+    1. (Optional: group setting) Go to Services->IAM->Group, add a new group (e.g kubernetes) with necessary permissions attached (we simply use “AdministratorAccess” in this blog for quick start, but it's not recommended in production environment. Better follow [least privileges rules](https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html#grant-least-privilege) in policy setting).
 
-## Step 1: Setup a kubernete cluster uing kops-cn
+    1. Go to Services->IAM->Users, create a new user (e.g. kops) with "Programmatic access" enabled and add it into the newly created group (e.g. kubernetes). After that, you will get the “Access key ID” and “Secret access key”. Download the credential document or write them down for future use;
 
-For dev and test, if you know Chinese, just go to [kops-cn](https://github.com/nwcdlabs/kops-cn) (Chinese version only) and skip step1.
-If you don't know Chinese, below is a quick guide to install kubernetes by kops:
-
-1. launch an EC2 (select Amazon Linux 2 AMI) as a kubernetes management machine, and configure it as
-    1. Login AWS China console and goto Services->IAM->Group, add a new group (e.g kubernetes) with “AdministratorAccess” attached (for test purpose)
-
-    1. Goto Services->IAM->Users, add a new user (e.g. kops) with “Access type” of “Programmatic access” and add it into the new created group (e.g. kubernetes). After it, you will get the “Access key ID” and “Secret access key” and write them down for future use;
-
-    1. Login the EC2, and perform the “aws configure”. It will ask you to input the following information. 
+    1. Login the EC2, and perform the “**aws configure**”. It will ask you to input the following information. 
         - AWS Access key ID: <created above>
         - AWS Secret access key: <created above>
         - Default Region name: cn-north-1  
         - Default output format: none
-        >Note: cn-north-1 is the region code for Beijing region, for Ningxia, it's cn-northwest-1
+        >Note: cn-north-1 is the region code for Beijing region, for Ningxia, it's cn-northwest-1  
 
-1. Install the kops and kubectl by following the instructions in https://github.com/nwcdlabs/kops-cn, or using the script of install-tools.sh in the package;
+## Step 1: Setup a kubernete cluster uing kops-cn
 
-1. By following the instructs in above kops-cn website, download kops-cn.zip and unzip it, and then make some changes to the kops-cn-master/Makefile as below:
-    * modify the S3 bucket name (Note: S3 bucket is to store the kubernetes cluster state)
-        - Create a S3 bucket through AWS China console in the Beijing region, for example, the S3 bucket name is "example-of-kops-state";
-        - replace the value of “KOPS_STATE_STORE” with your S3 bucket name of "example-of-kops-state”;
-    * modify SSH key pair
-        - Generate a SSH key-pair including .pem and .pub, for example ec2kp_nx.pem and ec2kp_nx.pub (you can generate key pair by following https://github.com/nwcdlabs/kops-cn/issues/68#issuecomment-483879369);
-        - Replace the value of “SSH_PUBLIC_KEY” with the full path of new generated public key of “ec2kp_nx.pub”;
-    * Modify the VPCID
-        - Create a new VPC (e.g. 10.32.0.0/16) in Beijing region through AWS China console. For example, the new VPC id is vpc-bb3e99d2;
-        - Create a new internet gateway through AWS China console, and attach it to the new created VPC;
-        - Replace the value of ‘VPCID’ with the new create VPC (e.g. vpc-bb3e99d2)
+We have a well-written document by Pahud about how to set kubernete cluster using kops in China.  
+1. For Chinese version, go to [kops-cn-chinese-version](https://github.com/nwcdlabs/kops-cn) 
+1. For English version, go to [kops-cn-english-version](https://github.com/nwcdlabs/kops-cn/blob/master/README_en.md)
+   > Note: For kops and kubectl package, remember to replace the binary download link with China S3 bucket address to avoid suffering from low speed issue.
+   > It is noted in kops-cn document [HOW TO section step 2](https://github.com/nwcdlabs/kops-cn/blob/master/README_en.md#HOWTO) .
 
-    * Install the kubernetes cluster by following the instructions of kops-cn
-        ```
-        cd kops-cn-master
-        make create-cluster
-        make edit-cluster # follow the instructions in kops-cn website to copy the content from spec.yml
-        make update-cluster # will take 10-15 mins
-        make validate-cluster # or you can start to use kubectl to operate on the kubernetes cluster
-        ```
-  
-    * (Optional ) If your AWS account hasn't finished ICP recordal whitelist for the public web service which is required by China government, you still need to perform the following steps:
-	    1. Login AWS China console and go to Services->EC2->Load Balancer, and select the the load balancer according to the .kube/config and make some changes:
-	        - add a rule into the security group to allow 8443 TCP traffic from 0.0.0.0/0 source;
-	        - Click on the “Listeners” tab and change the “Load Balancer Port” from 443 to 8444
-	    1. Edit .kube/config by appending “:8443” at end of line “server: https://xxxx”
+1. (Optional) If your AWS account hasn't finished **ICP recordal whitelist** for the public web service which is required by China government, you still need to perform the following steps. **Skip this part if your AWS account has been added to ICP whitelisted**.
 
-1. now, the kubernetes cluster is ready, and you can operate it by kubectl
+   1. Login AWS China console and go to Services->EC2->Load Balancer, and select the the load balancer according to the .kube/config and make some changes:
+      1. Add a rule into the security group to allow 8443 TCP traffic from 0.0.0.0/0 source;
+      1. Click on the “Listeners” tab and change the “Load Balancer Port” from 443 to 8444
+   1. Edit .kube/config by appending “:8443” at end of line “server: https://xxxx”
+
+1. Now, the kubernetes cluster is ready, and you can operate it by kubectl
+
+1. You will also need to install extra tools like helm. Check here for [detailed installation steps](https://github.com/nwcdlabs/kops-cn/blob/master/doc/Helm.md).
 
 ## Step 2: install TiDB on kubernete cluster
 
 1. Ssh to the bastion server. If you are using Amazon AMI,  ssh -i < name-of-your-private-key >.pem  ec2-user@< ip-address > . For other linux type, try centos or ubuntu for the username.
 
-1. Install Helm. Please refer to below [AWS official tutorial](https://docs.aws.amazon.com/eks/latest/userguide/helm.html) or [Helm document](https://helm.sh/docs/using_helm/#installing-helm) for Helm installation.
+1. If you haven't **install helm**, refer to [Helm Installation](https://docs.aws.amazon.com/eks/latest/userguide/helm.html) for Helm installation. Skip this step if you have finished helm installation.
+
+1. After helm,'s installtion, run ```helm init -i registry.cn-hangzhou.aliyuncs.com/google_containers/tiller:v2.14.1 --stable-repo-url https://kubernetes.oss-cn-hangzhou.aliyuncs.com/charts --service-account tiller``` to init.
 
 1. Add Pingcap into the Helm repo list.
     ```
@@ -74,22 +60,23 @@ If you don't know Chinese, below is a quick guide to install kubernetes by kops:
    kubectl apply -f https://raw.githubusercontent.com/pingcap/tidb-operator/master/manifests/crd.yaml && \
    kubectl get crd tidbclusters.pingcap.com
    
-   #to get chart yaml file of tidb-operator:
-   mkdir -p /home/tidb/tidb-operator && \
-   helm inspect values pingcap/tidb-operator --version=<chart-version> > /home/tidb/tidb-operator/values-tidb-operator.yaml
+   #to get chart yaml file of tidb-operator
+   #you could customize your folder location by chaging mkdir command
+   mkdir -p ~/tidb-operator && \
+   helm inspect values pingcap/tidb-operator --version=<chart-version> > ~/tidb-operator/values-tidb-operator.yaml
    
    #to modify the yaml file and specify local image repo:
-   vim /home/tidb/tidb-operator/values-tidb-operator.yaml
+   vim ~/tidb-operator/values-tidb-operator.yaml
    
-   # set the value of 'scheduler.kubeSchedulerImage' to 'gcr.azk8s.cn/google-containers/kube-scheduler', and save the file.
+ 
    ```
-   
+ 1. set the value of 'scheduler.kubeSchedulerImage' to 'gcr.azk8s.cn/google-containers/kube-scheduler', and save the file.  
    ![](img/yaml-file.png)
    
    ```
    #set the value of 'scheduler.kubeSchedulerImage' to 'gcr.azk8s.cn/google-containers/kube-scheduler', and save the file.
    #install tidb-operator:
-   helm install pingcap/tidb-operator --name=tidb-operator --namespace=tidb-admin --version=v1.0.0  -f /home/tidb/tidb-operator/values-tidb-operator.yaml
+   helm install pingcap/tidb-operator --name=tidb-operator --namespace=tidb-admin --version=v1.0.0  -f ~/tidb-operator/values-tidb-operator.yaml
    
    #verify the installation:
    kubectl get po -n tidb-admin -l app.kubernetes.io/name=tidb-operator
