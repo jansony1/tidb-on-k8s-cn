@@ -18,6 +18,8 @@ This document provides guides to deploy TiDB in k8s in AWS China using [kops-cn]
         - Default Region name: cn-north-1  
         - Default output format: none
         >Note: cn-north-1 is the region code for Beijing region, for Ningxia, it's cn-northwest-1  
+1. Make sure you have **enough instances capacity** before doing the test. For example, if your account is a new registered one, by default the limitation is that you could only launch one c5.2xlarge instance. Thus, it would definitely fails if you are trying to deploy on multi instances.
+
 
 ## Step 1: Setup a kubernete cluster uing kops-cn
 
@@ -97,9 +99,11 @@ We have a well-written document by Pahud about how to set kubernete cluster usin
     
 1. There is a values.yml file in this folder which contains the configuration set for components like TiKV, pd, TiDB etc. **Custom your own configuration by revising the yml file** before you install TiDB, examples of changes includes revise replica set, set a ELB, change pvReclaimPolicy or revise the storageClassName etc.    
 
-    - Changing storageclass to gp2, AWS EBS volume General SSD. For more choices, click [EBS Volume type](https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/EBSVolumeTypes.html)   
+    - Changing storageclass to gp2, AWS EBS volume General SSD.For more choices, click [EBS Volume type](https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/EBSVolumeTypes.html) .  
 
         ![](img/storage-class.png)
+        
+        >[IMPORTANT] There are serveral places for storageclass defination for different components in the yaml file, like TiDB, TiKV etc. If you are using **EBS-only instances** like c4 and c5 instance types, you must **replace all storageclass to one of the EBS types**. Or the PV creation would fail (no instance storage available). Click [instance type introduction](https://aws.amazon.com/ec2/instance-types/) if you have any questions.
 
     - changing component replica number   
         ![](img/replica-number.png)
@@ -107,13 +111,15 @@ We have a well-written document by Pahud about how to set kubernete cluster usin
     - change nodeport to AWS Load balancer
         ![](img/load-balancer.png)
         
+
+    
 1. After everything is set, run the following command.
 
     ```
     helm install pingcap/tidb-cluster --name=tidb-cluster-test --namespace=tidbtest -f values.yml 
     ```
 
-1. Check the cluster configuration. For example, you will see the storageClass applies succesfully to gp2 and PV has automatically been provisioned dynamically. Click here for more introduction upon [PV provision](https://kubernetes.io/docs/concepts/storage/persistent-volumes/).
+1. Check the cluster configuration. For example, you will see the storageClass applies succesfully to gp2 and **PV has automatically been provisioned dynamically**. Click here for more introduction upon [PV provision](https://kubernetes.io/docs/concepts/storage/persistent-volumes/).
 Also, if you go to [AWS Console](https://console.amazonaws.cn/ec2/autoscaling/home) now , you will find EBS GP2 volumes provisioned automatically.
     ```
     kubectl get pv | grep tidbtest
@@ -123,9 +129,10 @@ Also, if you go to [AWS Console](https://console.amazonaws.cn/ec2/autoscaling/ho
 
 
 ## Step3. Scale on kubernete cluster
-This section enables you to scalue the cluster up or down.
+This section enables you to scale the cluster up or down. And for each new instance, PV would be automatically created. 
 
-1. If you would like to scale up or down your pod replica number, simple revise the values.yml and run the following command. For more guide upon scaling, refer to [this page](https://github.com/pingcap/docs-cn/blob/master/v3.0/tidb-in-kubernetes/scale-in-kubernetes.md)
+
+1. For scaling up or down your pod replica number, simple revise the values.yml and run the following command. For more guide upon scaling, refer to [this page](https://github.com/pingcap/docs-cn/blob/master/v3.0/tidb-in-kubernetes/scale-in-kubernetes.md)
 
    ```
    helm upgrade tidb-cluster-test pingcap/tidb-cluster --namespace=tidbtest -f values.yml 
@@ -135,11 +142,26 @@ This section enables you to scalue the cluster up or down.
 
    ![](img/helm-upgrade.png)
 
-1. If you would like to scale up or down your Node nunber, go to [AWS EC2 Console](https://console.amazonaws.cn/ec2/autoscaling/home) and **Configure your auto scaling group**. You could edit the min, max and desired number for current state and also configure metircs to let the node scale automatically. For example, scale when CPU reaches 80%.
+1. For scaling up or down your Node nunber, go to [AWS EC2 Console](https://console.amazonaws.cn/ec2/autoscaling/home) and **Configure your auto scaling group**. You could edit the min, max and desired number for current state and also configure metircs to let the node scale automatically. For example, scale when CPU reaches 80%.
    ![](img/scale-node.png)
 
+1. You could also **configure Cluster Autoscaler(CA)** to combine the above scaling together. After the configuration, when new pod comes to pending status and finds no available node, CA will **automatically scale the node**. The max capacity depends on your auto scaling max setting in the last step. 
 
-## Step 4: How to access TiDB 
+   Detailed configuration steps could be found in [Deploy CA in eksworkshop](https://eksworkshop.com/scaling/deploy_ca/). Note that for China users, you have to replace the image registry address to ```gcr.azk8s.cn/google-containers/cluster-autoscaler:v1.2.2``` to make it work. Or you will receive 'trying and failing to pull image' error.
+   
+   ![](img/autoscaler-yml.png)
+
+   An example is listed below where you could see new requests triggers new nodes and new pods launched on new nodes.
+   
+   ![](img/pod-pending.png)
+   
+   New node created.
+   
+   ![](img/ca-new-node.png)
+   
+
+
+## Step 4. How to access TiDB 
 
 ###	Cluster Startup
 1. Watch tidb-cluster up and running
@@ -180,11 +202,26 @@ If your pv is retained, after the scale down, you may need to delete the release
   kubectl delete pv pvc-2eb80d98-bd7XXXc1ae  -n tidbtest
   ```
 
+## Troubleshooting
+
+1. **Trying and failing to pull image error : Check the image registry address**   
+In China, as google is being blocked, any image coming from google.com is blocked. You have to replace the image source to a China native one. For example, you could use 
+'gcr.azk8s.cn/google-containers' etc.
+
+1. **Failing to launch desired number of pods or node: Check account limitation**   
+Each account has an instance number limitation. You should check your limitation first to see if you have enough capacity. If you need more number than your current limit, click '**request limit increase**'.
+   ![](img/instance-limit.png)
+
 ## Limitation
 
 According to [this page](https://pingcap.com/docs-cn/v3.0/tidb-in-kubernetes/faq/#tidb-%E7%9B%B8%E5%85%B3%E7%BB%84%E4%BB%B6%E5%8F%AF%E4%BB%A5%E9%85%8D%E7%BD%AE-hpa-%E6%88%96-vpa-%E4%B9%88), TiDB cluster hasn't supported HPA(Horizontal Pod Autoscaling) or VPA(Vertical Pod Autoscaling). The reason is because Tidb cluster uses statefulset instead of deployment as database is a stateful application and it's hard for a stateful application to scale simply based on CPU or memories.
 
 ![](img/stateful-set.png)
+
+However, **You could auto scale other components that uses deployments like discovery and monitoring components** if you like. You could check [this page](https://eksworkshop.com/scaling/deploy_hpa/) for detailed steps.
+   
+   ![](img/deployment.png)
+
 
 ## Testing
 Please refer to this page for [run sysbench on TiDB](https://github.com/pingcap/docs/blob/master/dev/benchmark/sysbench-v4.md)
@@ -194,4 +231,4 @@ Please refer to this page for [run sysbench on TiDB](https://github.com/pingcap/
 * [Pingcap](https://pingcap.com/docs-cn/dev/tidb-in-kubernetes/tidb-operator-overview/)
 * [AWS EKS workshop](https://eksworkshop.com/scaling/)
 * [kubernetes Concept introduction](https://kubernetes.io/docs/concepts/storage/persistent-volumes/)
-
+* [Cluster autoscalor on AWS](https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/cloudprovider/aws/README.md)
