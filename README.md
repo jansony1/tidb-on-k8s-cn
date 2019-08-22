@@ -103,7 +103,7 @@ We have a well-written document by Pahud about how to set kubernete cluster usin
 
         ![](img/storage-class.png)
         
-        >[IMPORTANT] There are serveral places for storageclass defination for different components in the yaml file, like TiDB, TiKV etc. If you are using **EBS-only instances** like c4 and c5 instance types, you must **replace all storageclass to one of the EBS types**. Or the PV creation would fail (no instance storage available). Click [instance type introduction](https://aws.amazon.com/ec2/instance-types/) if you have any questions.
+        >**【IMPORTANT】** There are serveral places for storageclass defination for different components in the yaml file, like TiDB, TiKV etc. If you are using **EBS-only instances** like c4 and c5 instance types, you must **replace all storageclass to one of the EBS types**. Or the PV creation would fail (no instance storage available). Click [instance type introduction](https://aws.amazon.com/ec2/instance-types/) if you have any questions.
 
     - changing component replica number   
         ![](img/replica-number.png)
@@ -211,6 +211,13 @@ In China, as google is being blocked, any image coming from google.com is blocke
 1. **Failing to launch desired number of pods or node: Check account limitation**   
 Each account has an instance number limitation. You should check your limitation first to see if you have enough capacity. If you need more number than your current limit, click '**request limit increase**'.
    ![](img/instance-limit.png)
+
+1. **Fail to Create PV: check storageclass defination**    
+There are serveral storageclass defination for different components in the yaml file, like TiDB, TiKV, pd etc. 
+   - If you are using **EBS-only instances** like c4 and c5 instance types, you must **replace all storageclass to one of the EBS types like gp2**. Or the PV creation would fail cause no instance storage is available. 
+   - If you are using instances with instance storage like m3, i3 etc, you could choose either local storage or EBS according to your own need. If you don't how to choose, read [Storage type choice](https://pingcap.com/docs-cn/v3.0/tidb-in-kubernetes/deploy/prerequisites/) for more info.
+   - Click [instance type introduction](https://aws.amazon.com/ec2/instance-types/) if you would like to know more about different instance types.
+
 
 ## Limitation
 
