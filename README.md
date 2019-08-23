@@ -40,11 +40,12 @@ We have a well-written document by Pahud about how to set kubernete cluster usin
 
 1. You will also need to install extra tools like helm. Check here for [detailed installation steps](https://github.com/nwcdlabs/kops-cn/blob/master/doc/Helm.md).
 
-## Step 2: install TiDB on kubernete cluster
+## Step 2: install TiDB on kubernetes cluster
 
 1. Ssh to the bastion server. If you are using Amazon AMI,  ssh -i < name-of-your-private-key >.pem  ec2-user@< ip-address > . For other linux type, try centos or ubuntu for the username.
 
 1. If you haven't **install helm**, refer to [Helm Installation](https://docs.aws.amazon.com/eks/latest/userguide/helm.html) for Helm installation. Skip this step if you have finished helm installation.
+   >Note : If you meet error 'cannot find tiller', after unzip helm.tgz, mv tiller to lo /usr/local/bin/ too.
 
 1. Add Pingcap into the Helm repo list.
     ```
@@ -197,9 +198,12 @@ If your pv is retained, after the scale down, you may need to delete the release
 
 ## Troubleshooting
 
-1. **Trying and failing to pull image error : Check the image registry address**   
-In China, as google is being blocked, any image coming from google.com is blocked. You have to replace the image source to a China native one. For example, you could use 
+1. **Error: Trying and failing to pull image error**   
+Check the image registry address. In China, as google is being blocked, any image coming from google.com is blocked. You have to replace the image source to a China native one. For example, you could use 
 'gcr.azk8s.cn/google-containers' etc.
+
+1. **Error: cannot find tiller**   
+Move tiller to /usr/local/bin/ path.
 
 1. **Failing to launch desired number of pods or node: Check account limitation**   
 Each account has an instance number limitation. You should check your limitation first to see if you have enough capacity. If you need more number than your current limit, click '**request limit increase**'.
