@@ -110,9 +110,7 @@ We have a well-written document by Pahud about how to set kubernete cluster usin
 
     - change nodeport to AWS Load balancer
         ![](img/load-balancer.png)
-        
-
-    
+       
 1. After everything is set, run the following command.
 
     ```
