@@ -33,7 +33,7 @@ We have a well-written document by Pahud about how to set kubernete cluster usin
 
    1. Login AWS China console and go to Services->EC2->Load Balancer, and select the the load balancer according to the .kube/config and make some changes:
       1. Add a rule into the security group to allow 8443 TCP traffic from 0.0.0.0/0 source;
-      1. Click on the “Listeners” tab and change the “Load Balancer Port” from 443 to 8444
+      1. Click on the “Listeners” tab and change the “Load Balancer Port” from 443 to 8443
    1. Edit .kube/config by appending “:8443” at end of line “server: https://xxxx”
 
 1. Now, the kubernetes cluster is ready, and you can operate it by kubectl
