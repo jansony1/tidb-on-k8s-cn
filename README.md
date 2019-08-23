@@ -33,7 +33,7 @@ We have a well-written document by Pahud about how to set kubernete cluster usin
 
    1. Login AWS China console and go to Services->EC2->Load Balancer, and select the the load balancer according to the .kube/config and make some changes:
       1. Add a rule into the security group to allow 8443 TCP traffic from 0.0.0.0/0 source;
-      1. Click on the “Listeners” tab and change the “Load Balancer Port” from 443 to 8444
+      1. Click on the “Listeners” tab and change the “Load Balancer Port” from 443 to 8443
    1. Edit .kube/config by appending “:8443” at end of line “server: https://xxxx”
 
 1. Now, the kubernetes cluster is ready, and you can operate it by kubectl
@@ -45,8 +45,6 @@ We have a well-written document by Pahud about how to set kubernete cluster usin
 1. Ssh to the bastion server. If you are using Amazon AMI,  ssh -i < name-of-your-private-key >.pem  ec2-user@< ip-address > . For other linux type, try centos or ubuntu for the username.
 
 1. If you haven't **install helm**, refer to [Helm Installation](https://docs.aws.amazon.com/eks/latest/userguide/helm.html) for Helm installation. Skip this step if you have finished helm installation.
-
-1. After helm,'s installtion, run ```helm init -i registry.cn-hangzhou.aliyuncs.com/google_containers/tiller:v2.14.1 --stable-repo-url https://kubernetes.oss-cn-hangzhou.aliyuncs.com/charts --service-account tiller``` to init.
 
 1. Add Pingcap into the Helm repo list.
     ```
