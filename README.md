@@ -46,8 +46,6 @@ We have a well-written document by Pahud about how to set kubernete cluster usin
 
 1. If you haven't **install helm**, refer to [Helm Installation](https://docs.aws.amazon.com/eks/latest/userguide/helm.html) for Helm installation. Skip this step if you have finished helm installation.
 
-1. After helm,'s installtion, run ```helm init -i registry.cn-hangzhou.aliyuncs.com/google_containers/tiller:v2.14.1 --stable-repo-url https://kubernetes.oss-cn-hangzhou.aliyuncs.com/charts --service-account tiller``` to init.
-
 1. Add Pingcap into the Helm repo list.
     ```
     helm repo add pingcap https://charts.pingcap.org/
