@@ -93,7 +93,7 @@ We have a well-written document by Pahud about how to set kubernete cluster usin
     cd tidb-cluster
     ```
     
-1. There is a values.yml file in this folder which contains the configuration set for components like TiKV, pd, TiDB etc. **Custom your own configuration by revising the yml file** before you install TiDB, examples of changes includes revise replica set, set a ELB, change pvReclaimPolicy or revise the storageClassName etc.    
+1. There is a values.yaml file in this folder which contains the configuration set for components like TiKV, pd, TiDB etc. **Custom your own configuration by revising the yml file** before you install TiDB, examples of changes includes revise replica set, set a ELB, change pvReclaimPolicy or revise the storageClassName etc.    
 
     - Changing storageclass to gp2, AWS EBS volume General SSD.For more choices, click [EBS Volume type](https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/EBSVolumeTypes.html) .  
 
@@ -110,7 +110,7 @@ We have a well-written document by Pahud about how to set kubernete cluster usin
 1. After everything is set, run the following command.
 
     ```
-    helm install pingcap/tidb-cluster --name=tidb-cluster-test --namespace=tidbtest -f values.yml 
+    helm install pingcap/tidb-cluster --name=tidb-cluster-test --namespace=tidbtest -f values.yaml 
     ```
 
 1. Check the cluster configuration. For example, you will see the storageClass applies succesfully to gp2 and **PV has automatically been provisioned dynamically**. Click here for more introduction upon [PV provision](https://kubernetes.io/docs/concepts/storage/persistent-volumes/).
@@ -126,10 +126,10 @@ Also, if you go to [AWS Console](https://console.amazonaws.cn/ec2/autoscaling/ho
 This section enables you to scale the cluster up or down. And for each new instance, PV would be automatically created. 
 
 
-1. For scaling up or down your pod replica number, simple revise the values.yml and run the following command. For more guide upon scaling, refer to [this page](https://github.com/pingcap/docs-cn/blob/master/v3.0/tidb-in-kubernetes/scale-in-kubernetes.md)
+1. For scaling up your pod replica number, simple revise the values.yaml and run the following command. For more guide upon scaling, refer to [this page](https://github.com/pingcap/docs-cn/blob/master/v3.0/tidb-in-kubernetes/scale-in-kubernetes.md)
 
    ```
-   helm upgrade tidb-cluster-test pingcap/tidb-cluster --namespace=tidbtest -f values.yml 
+   helm upgrade tidb-cluster-test pingcap/tidb-cluster --namespace=tidbtest -f values.yaml 
    ``` 
 
    You will see this after the command.
@@ -190,7 +190,7 @@ If you are running this from a remote machine, you must specify the server's ext
 
 ## Delete resources
 
-If your pv is retained, after the scale down, you may need to delete the released pv manually by running the following command.
+If your pvReclaimPolicy is retained, after the scale down, you may need to delete the released pv manually by running the following command.
 
   ```
   kubectl delete pv pvc-2eb80d98-bd7XXXc1ae  -n tidbtest
@@ -203,7 +203,7 @@ Check the image registry address. In China, as google is being blocked, any imag
 'gcr.azk8s.cn/google-containers' etc.
 
 1. **Error: cannot find tiller**   
-Move tiller to /usr/local/bin/ path.
+Move tiller to ```/usr/local/bin/``` path.
 
 1. **Failing to launch desired number of pods or node: Check account limitation**   
 Each account has an instance number limitation. You should check your limitation first to see if you have enough capacity. If you need more number than your current limit, click '**request limit increase**'.
