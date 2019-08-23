@@ -67,10 +67,8 @@ We have a well-written document by Pahud about how to set kubernete cluster usin
    
    #to modify the yaml file and specify local image repo:
    vim ~/tidb-operator/values-tidb-operator.yaml
-   
- 
    ```
- 1. set the value of 'scheduler.kubeSchedulerImage' to 'gcr.azk8s.cn/google-containers/kube-scheduler', and save the file.  
+1. set the value of 'scheduler.kubeSchedulerImage' to 'gcr.azk8s.cn/google-containers/kube-scheduler', and save the file.  
    ![](img/yaml-file.png)
    
    ```
@@ -82,8 +80,7 @@ We have a well-written document by Pahud about how to set kubernete cluster usin
    kubectl get po -n tidb-admin -l app.kubernetes.io/name=tidb-operator
 
    ```
-   
-1. Run the following command
+1. Run the following command to get the configuration file
 
     ```
     # fetch Tidb cluster package  
