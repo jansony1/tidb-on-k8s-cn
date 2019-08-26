@@ -29,6 +29,33 @@ We have a well-written document by Pahud about how to set kubernete cluster usin
    > Note: For kops and kubectl package, remember to replace the binary download link with China S3 bucket address to avoid suffering from low speed issue.
    > It is noted in kops-cn document [HOW TO section step 2](https://github.com/nwcdlabs/kops-cn/blob/master/README_en.md#HOWTO) .
 
+1. If you wish to deploy the cluster into a single AZ where you could enjoy lower latency and fewer data transfer cost, you could revise the following file.
+```
+make edit-cluster
+##find create-cluster part and edit "zones", "subnet" etc. 
+create-cluster:
+	@KOPS_STATE_STORE=$(KOPS_STATE_STORE) \
+	AWS_PROFILE=$(AWS_PROFILE) \
+	AWS_REGION=$(AWS_REGION) \
+	AWS_DEFAULT_REGION=$(AWS_DEFAULT_REGION) \
+	kops create cluster \
+     --cloud=aws \
+     --name=$(CLUSTER_NAME) \
+     --image=$(AMI) \
+     --zones=cn-northwest-1a \
+     --master-count=$(MASTER_COUNT) \
+     --master-size=$(MASTER_SIZE) \
+     --node-count=$(NODE_COUNT) \
+     --node-size=$(NODE_SIZE)  \
+     --vpc=$(VPCID) \
+     --kubernetes-version=$(KUBERNETES_VERSION_URI) \
+     --networking=amazon-vpc-routed-eni \
+     --subnets=subnet-xxxxxxxxxxxx \
+     --ssh-public-key=$(SSH_PUBLIC_KEY)
+
+make update-cluster
+```
+
 1. (Optional) If your AWS account hasn't finished **ICP recordal whitelist** for the public web service which is required by China government, you still need to perform the following steps. **Skip this part if your AWS account has been added to ICP whitelisted**.
 
    1. Login AWS China console and go to Services->EC2->Load Balancer, and select the the load balancer according to the .kube/config and make some changes:
@@ -38,14 +65,12 @@ We have a well-written document by Pahud about how to set kubernete cluster usin
 
 1. Now, the kubernetes cluster is ready, and you can operate it by kubectl
 
-1. You will also need to install extra tools like helm. Check here for [detailed installation steps](https://github.com/nwcdlabs/kops-cn/blob/master/doc/Helm.md).
+1. You will also need to install extra tools like helm & tiller. Check here for [detailed installation steps](https://github.com/nwcdlabs/kops-cn/blob/master/doc/Helm.md).
+>Note : If you meet error 'cannot find tiller', after unzip helm.tgz, move tiller to lo /usr/local/bin/ too.
 
 ## Step 2: install TiDB on kubernetes cluster
 
 1. Ssh to the bastion server. If you are using Amazon AMI,  ssh -i < name-of-your-private-key >.pem  ec2-user@< ip-address > . For other linux type, try centos or ubuntu for the username.
-
-1. If you haven't **install helm**, refer to [Helm Installation](https://docs.aws.amazon.com/eks/latest/userguide/helm.html) for Helm installation. Skip this step if you have finished helm installation.
-   >Note : If you meet error 'cannot find tiller', after unzip helm.tgz, mv tiller to lo /usr/local/bin/ too.
 
 1. Add Pingcap into the Helm repo list.
     ```
@@ -64,7 +89,7 @@ We have a well-written document by Pahud about how to set kubernete cluster usin
    #to get chart yaml file of tidb-operator
    #you could customize your folder location by chaging mkdir command
    mkdir -p ~/tidb-operator && \
-   helm inspect values pingcap/tidb-operator --version=<chart-version> > ~/tidb-operator/values-tidb-operator.yaml
+   helm inspect values pingcap/tidb-operator --version=v1.0.0 > ~/tidb-operator/values-tidb-operator.yaml
    
    #to modify the yaml file and specify local image repo:
    vim ~/tidb-operator/values-tidb-operator.yaml
@@ -126,26 +151,26 @@ Also, if you go to [AWS Console](https://console.amazonaws.cn/ec2/autoscaling/ho
 This section enables you to scale the cluster up or down. And for each new instance, PV would be automatically created. 
 
 
-1. For scaling up your pod replica number, simple revise the values.yaml and run the following command. For more guide upon scaling, refer to [this page](https://github.com/pingcap/docs-cn/blob/master/v3.0/tidb-in-kubernetes/scale-in-kubernetes.md)
-
+1. **Manually Scale Kubernetes Worker Node**   
+   For scaling up or down your Node nunber, go to [AWS EC2 Console](https://console.amazonaws.cn/ec2/autoscaling/home) and **Configure your auto scaling group**. You could edit the min, max and desired number for current state and also configure metircs to let the node scale automatically. For example, scale when CPU reaches 80%.
+   ![](img/scale-node.png)
+   
+1. **Manually Scale Pod Number**   
+   For scaling up your pod replica number, simple revise the values.yaml and run the following command. For more guide upon scaling, refer to [this page](https://github.com/pingcap/docs-cn/blob/master/v3.0/tidb-in-kubernetes/scale-in-kubernetes.md)
    ```
    helm upgrade tidb-cluster-test pingcap/tidb-cluster --namespace=tidbtest -f values.yaml 
    ``` 
-
    You will see this after the command.
-
    ![](img/helm-upgrade.png)
+1. **Automatically Scale Your Pod and Node using Cluster Autoscaler**     
 
-1. For scaling up or down your Node nunber, go to [AWS EC2 Console](https://console.amazonaws.cn/ec2/autoscaling/home) and **Configure your auto scaling group**. You could edit the min, max and desired number for current state and also configure metircs to let the node scale automatically. For example, scale when CPU reaches 80%.
-   ![](img/scale-node.png)
+   You could also **configure Cluster Autoscaler(CA)** to combine the above scaling together. After the configuration, when new pod comes to pending status and finds no available node, CA will **automatically scale the node**. The max capacity depends on your auto scaling max setting in the last step. 
 
-1. You could also **configure Cluster Autoscaler(CA)** to combine the above scaling together. After the configuration, when new pod comes to pending status and finds no available node, CA will **automatically scale the node**. The max capacity depends on your auto scaling max setting in the last step. 
-
-   Detailed configuration steps could be found in [Deploy CA in eksworkshop](https://eksworkshop.com/scaling/deploy_ca/). Note that for China users, you have to replace the image registry address to ```gcr.azk8s.cn/google-containers/cluster-autoscaler:v1.2.2``` to make it work. Or you will receive 'trying and failing to pull image' error.
+   Detailed CA configuration steps could be found in [Deploy CA in eksworkshop](https://eksworkshop.com/scaling/deploy_ca/). Note that for China users, you have to replace the image registry address to ```gcr.azk8s.cn/google-containers/cluster-autoscaler:v1.2.2``` to make it work. Or you will receive 'trying and failing to pull image' error.
    
    ![](img/autoscaler-yml.png)
 
-   An example is listed below where you could see new requests triggers new nodes and new pods launched on new nodes.
+   An example is listed below where you could see new pod scaling requests (by revising replicas number in yaml file) triggers new nodes and new pods launched on new nodes.
    
    ![](img/pod-pending.png)
    
@@ -153,8 +178,6 @@ This section enables you to scale the cluster up or down. And for each new insta
    
    ![](img/ca-new-node.png)
    
-
-
 ## Step 4. How to access TiDB 
 
 ###	Cluster Startup
@@ -190,11 +213,9 @@ If you are running this from a remote machine, you must specify the server's ext
 
 ## Delete resources
 
-If your pvReclaimPolicy is retained, after the scale down, you may need to delete the released pv manually by running the following command.
+- Use ```make delete-cluster``` to delete all resources
 
-  ```
-  kubectl delete pv pvc-2eb80d98-bd7XXXc1ae  -n tidbtest
-  ```
+- If your pvReclaimPolicy is retained, after the scale down, you may need to delete the released pv manually by running ```kubectl delete pv```
 
 ## Troubleshooting
 
@@ -214,17 +235,6 @@ There are serveral storageclass defination for different components in the yaml 
    - If you are using **EBS-only instances** like c4 and c5 instance types, you must **replace all storageclass to one of the EBS types like gp2**. Or the PV creation would fail cause no instance storage is available. 
    - If you are using instances with instance storage like m3, i3 etc, you could choose either local storage or EBS according to your own need. If you don't how to choose, read [Storage type choice](https://pingcap.com/docs-cn/v3.0/tidb-in-kubernetes/deploy/prerequisites/) for more info.
    - Click [instance type introduction](https://aws.amazon.com/ec2/instance-types/) if you would like to know more about different instance types.
-
-
-## Limitation
-
-According to [this page](https://pingcap.com/docs-cn/v3.0/tidb-in-kubernetes/faq/#tidb-%E7%9B%B8%E5%85%B3%E7%BB%84%E4%BB%B6%E5%8F%AF%E4%BB%A5%E9%85%8D%E7%BD%AE-hpa-%E6%88%96-vpa-%E4%B9%88), TiDB cluster hasn't supported HPA(Horizontal Pod Autoscaling) or VPA(Vertical Pod Autoscaling). The reason is because Tidb cluster uses statefulset instead of deployment as database is a stateful application and it's hard for a stateful application to scale simply based on CPU or memories.
-
-![](img/stateful-set.png)
-
-However, **You could auto scale other components that uses deployments like discovery and monitoring components** if you like. You could check [this page](https://eksworkshop.com/scaling/deploy_hpa/) for detailed steps.
-   
-   ![](img/deployment.png)
 
 
 ## Testing

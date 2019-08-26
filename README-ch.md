@@ -5,7 +5,7 @@
 TiDB提供了对AWS平台的支持，官网也有提供[guide](https://pingcap.com/docs-cn/v3.0/tidb-in-kubernetes/deploy/aws-eks/)如何利用terraform模板一键在[Amazon Elastic Kubernetes Service（EKS上）](https://aws.amazon.com/cn/eks/)中部署整套环境。然而由于中国区暂时还未上线EKS，以及这套环境是依赖模板一键启动在EKS中等限制，本文做了详细的介绍，如何利用AWS中国区账号，自己搭建kubernetes环境，部署TiDB集群并且实现TiDB集群的动态扩展。
 
 ## 内容概述
-本文内容主要分为两个方面，一是如何启动kubernetes集群并且部署TiDB集群，二是集群搭建完毕后，如何实现集群的扩展。在本文的最后，也添加了一些常见问题的Troubleshooting以及已知的一些扩展方面的limits。
+本文内容主要分为两个方面，一是如何启动kubernetes集群并且部署TiDB集群，二是集群搭建完毕后，如何实现集群的扩展。在本文的最后，介绍了如何利用sysbench对TiDB集群进行压力测试。
 
 ## 先决条件
 1. 拥有AWS中国区账号，如果还没有，[点击此处注册](https://www.amazonaws.cn/sign-up/)
@@ -185,41 +185,14 @@ TiDB提供了对AWS平台的支持，官网也有提供[guide](https://pingcap.c
    ![](img/helm-upgrade.png)
 
 1. **基于Cluster Autoscaler实现Node和pod依次自动扩展**   
-   在上述两步中，我们均通过手动的方式，实现了集群的扩展。我们也可以通过配置 **Cluster AutoScaler(CA)** 实现半自动的动态扩展，即如果手动修改pod数量，node数量不够时，CA会自动启动node，并且在node创建成功后实现pod的自动部署。以下为详细步骤   
-   
+   在上述两步中，我们均通过手动的方式，实现了集群的扩展。我们也可以通过配置 **Cluster AutoScaler(CA)** 实现半自动的动态扩展，即如果手动修改pod数量，node数量不够时，CA会自动启动node，并且在node创建成功后实现pod的自动部署。以下为详细步骤：      
    - 有关于CA在kubernetes上的配置步骤，可点击[此文档的说明](https://eksworkshop.com/scaling/deploy_ca/)查看.  **不需要做Scale deployment这一步** 。
    - 对于中国用户，需要修改镜像地址为中国国内的镜像 ```gcr.azk8s.cn/google-containers/cluster-autoscaler:v1.2.2```，否则拉取不起来。
    ![](img/autoscaler-yml.png)
-   - 此时，再次修改yaml文件为desired count。下图为示例截图，可以看到新的node已经创建成功。
+   - 部署完毕后。此时，再次修改yaml文件为desired count。下图为示例截图，可以看到新的node已经创建成功。
    ![](img/pod-pending.png)
    ![](img/ca-new-node.png)
    
-## 删除资源
-可根据需求自行删除namespace, pod，node等，留意如果您的pvReclaimPolicy设置的为Retain, 在pod删除后，pv不会自动删除，您需要手动删除EBS卷或者通过```kubectl delete pv ```命令来删除
-
-## Troubleshooting
-1. **Error: trying and failing to pull image error**   
-此error的常见原因是，中国block了google的源，所以需要将google的源替换为国内的源。比如gcr.azk8s.cn/google-containers等等。
-
-1. **Error: cannot find tiller**
-- tiller执行文件在helm的压缩包当中，需要将helm可执行文件移到```/usr/local/bin/```目录下
-- 每次在您想要为集群使用 helm 时重复[本地运行 helm 和 tiller](https://docs.aws.amazon.com/zh_cn/eks/latest/userguide/helm.html)的过程
-
-1. **启动新资源失败**   
-检查账户EC2 limits。确保有足够的limit可以启动期望数量的EC2。如果实例数量不够，请点击请求限额资源。
-   ![](img/instance-limit.png)
-   
-1. **PV创建失败**    
-检查storageclass的定义。
-   - 对于只支持EBS的实例类型，如c4,c5等，我们需要将所有默认的local-instance更改至一种EBS类型，常用的是标准的SSD gp2；否则PV会因为没有可用的实例存储而创建失败。
-   - 对于含有instance storage的实力类型，比如i3等等，可以选择local storage或者ebs实例类型。根据[此文](https://pingcap.com/docs-cn/v3.0/tidb-in-kubernetes/deploy/prerequisites/)的建议,因为 TiKV 组件的性能很依赖磁盘 I/O 且数据量一般较大，因此建议每个 TiKV 实例独占一块 NVMe 的盘.
-   - 如果不清楚不同instance type之间的区别，点击[此文档](https://aws.amazon.com/ec2/instance-types/)查看
-
-
-## 已知限制
-根据[此页面提供的信息](https://pingcap.com/docs-cn/v3.0/tidb-in-kubernetes/faq/#tidb-%E7%9B%B8%E5%85%B3%E7%BB%84%E4%BB%B6%E5%8F%AF%E4%BB%A5%E9%85%8D%E7%BD%AE-hpa-%E6%88%96-vpa-%E4%B9%88)，TiDB不支持[HPA(Horizontal Pod Autoscaling)](https://eksworkshop.com/scaling/deploy_hpa/) or VPA(Vertical Pod Autoscaling)。原因是TiDB作为一个数据库应用，其核心组件都是有状态的，采用了statefulset来部署。对于有状态的应用，靠CPU或者内存这些简单的指标是很难直接扩展的。   
-![](img/stateful-set.png)
-
 ## 压力测试：
 
 采用sysbench工具对该cluster做模拟压力测试。   
@@ -250,6 +223,33 @@ TiDB提供了对AWS平台的支持，官网也有提供[guide](https://pingcap.c
    通过CloudWatch观察相关资源，发现两个node出现cpu瓶颈。由于本次模拟50个并发的OLTP读写业务，对tidb组件的性能压力较大，而tidb仅两个pod，对应的两个node的CPU出现瓶颈，符合预期。
 
    ![](img/node-cpu.png)
+   
+## Troubleshooting
+1. **Error: trying and failing to pull image error**   
+此error的常见原因是，中国block了google的源，所以需要将google的源替换为国内的源。比如gcr.azk8s.cn/google-containers等等。
+
+1. **Error: cannot find tiller**
+- tiller执行文件在helm的压缩包当中，需要将helm可执行文件移到```/usr/local/bin/```目录下
+- 每次在您想要为集群使用 helm 时重复[本地运行 helm 和 tiller](https://docs.aws.amazon.com/zh_cn/eks/latest/userguide/helm.html)的过程
+
+1. **启动新资源失败**   
+检查账户EC2 limits。确保有足够的limit可以启动期望数量的EC2。如果实例数量不够，请点击请求限额资源。
+   ![](img/instance-limit.png)
+   
+1. **PV创建失败**    
+检查storageclass的定义。
+   - 对于只支持EBS的实例类型，如c4,c5等，我们需要将所有默认的local-instance更改至一种EBS类型，常用的是标准的SSD gp2；否则PV会因为没有可用的实例存储而创建失败。
+   - 对于含有instance storage的实力类型，比如i3等等，可以选择local storage或者ebs实例类型。根据[此文](https://pingcap.com/docs-cn/v3.0/tidb-in-kubernetes/deploy/prerequisites/)的建议,因为 TiKV 组件的性能很依赖磁盘 I/O 且数据量一般较大，因此建议每个 TiKV 实例独占一块 NVMe 的盘.
+   - 如果不清楚不同instance type之间的区别，点击[此文档](https://aws.amazon.com/ec2/instance-types/)查看
+
+## 删除资源
+
+- 如需一键删除上述环境，建议采用kops-cn所提供的```make delete-cluster``` 命令完成AWS资源的删除。
+
+- 也可根据需求自行删除namespace, pod，node等，留意如果您的pvReclaimPolicy设置的为Retain, 在pod删除后，pv不会自动删除，您需要手动删除EBS卷或者通过```kubectl delete pv ```命令来删除。
+
+## 总结
+本文描述了如何利用kops-cn，在AWS中国区搭建kubernetes集群并且部署TiDB，并且解决了TiDB弹性扩展的问题。通过AutoScaler的组件，我们可以实现node随着pod自动扩展的功能。文章的最后提供了对TiDB进行压测的方法以及示例效果。
 
 
 ## 参考资料
